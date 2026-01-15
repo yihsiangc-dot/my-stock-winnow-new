@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Download, Zap, X, Globe } from 'lucide-react';
+import { Download, Zap, Globe } from 'lucide-react';
 import JSZip from 'jszip';
 
 interface SetupGuideModalProps {
@@ -53,9 +53,9 @@ const SetupGuideModal: React.FC<SetupGuideModalProps> = ({ onClose }) => {
           <Zap className="text-red-500 w-8 h-8" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-black italic uppercase tracking-tighter">Fix Black Screen / Build Error</h2>
+          <h2 className="text-2xl font-black italic uppercase tracking-tighter">Vercel Deployment Fix</h2>
           <p className="text-sm text-slate-400 leading-relaxed">
-            黑畫面通常是因為 GitHub 上的檔案不完整或路徑錯誤。請下載下方的「修復包」，解壓後將所有檔案拖進 GitHub 根目錄覆蓋。
+            檢測到構建錯誤。請確保 Vercel 的環境變數設定正確，並使用此修復包更新您的 GitHub 專案。
           </p>
         </div>
         
@@ -66,22 +66,25 @@ const SetupGuideModal: React.FC<SetupGuideModalProps> = ({ onClose }) => {
             className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center gap-3"
           >
             <Download className="w-4 h-4" />
-            {isExporting ? "Processing..." : "Download Recovery Pack (.zip)"}
+            {isExporting ? "Processing..." : "Download Fix Pack (.zip)"}
           </button>
           
           <div className="bg-red-500/5 border border-red-500/10 rounded-2xl p-4 text-left space-y-2">
             <div className="flex items-center gap-2 text-[10px] font-black uppercase text-red-500 tracking-widest">
-              <Globe className="w-3 h-3" /> Important: Vercel Settings
+              <Globe className="w-3 h-3" /> 重要：Vercel 環境變數設定
             </div>
-            <p className="text-[10px] text-slate-500">
-              請在 Vercel 控制台的 Project Settings -> Environment Variables 加入：
+            <p className="text-[10px] text-slate-500 leading-normal">
+              請在 Vercel 控制台的 Project Settings → Environment Variables 加入：
             </p>
-            <code className="block bg-black p-2 rounded text-[10px] font-mono text-red-400">API_KEY = [您的 Gemini API 金鑰]</code>
+            <div className="bg-black p-3 rounded border border-white/5 font-mono text-[10px] space-y-1">
+              <div className="text-slate-500">Key: <span className="text-red-400">API_KEY</span></div>
+              <div className="text-slate-500">Value: <span className="text-slate-300">[貼上您的 Gemini API Key]</span></div>
+            </div>
           </div>
         </div>
 
         <button onClick={onClose} className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 hover:text-white transition-colors">
-          I understand, return to dashboard
+          Return to Dashboard
         </button>
       </div>
     </div>

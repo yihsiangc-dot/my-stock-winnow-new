@@ -2,7 +2,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { Sector, AnalysisResult } from "./types";
 
-// 必須使用 named parameter 初始化
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function analyzeSectorDynamics(sector: Sector): Promise<AnalysisResult> {
@@ -16,8 +15,7 @@ export async function analyzeSectorDynamics(sector: Sector): Promise<AnalysisRes
 
   const prompt = `
     【台股族群深度掃描】
-    觀測日期：${dateStr}
-    觀測時間：${timeStr}
+    觀測日期：${dateStr} ${timeStr}
     目標族群：[${sector.name}]
     
     即時市場數據：
@@ -38,10 +36,7 @@ export async function analyzeSectorDynamics(sector: Sector): Promise<AnalysisRes
       },
     });
 
-    // 正確訪問 .text 屬性 (Getter)
     const text = response.text || "目前無法取得即時分析。";
-    
-    // 必須提取搜尋接地來源以符合規則
     const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: any) => ({
       web: {
         uri: chunk.web?.uri || '',
