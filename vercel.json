@@ -1,0 +1,9 @@
+
+{
+  "rewrites": [
+    {
+      "source": "/fugle-api/:path*",
+      "destination": "https://api.fugle.tw/:path*"
+    }
+  ]
+}
