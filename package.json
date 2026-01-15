@@ -1,8 +1,8 @@
 
 {
-  "name": "taiwan-stock-hunter-final",
+  "name": "taiwan-stock-hunter",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,11 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.34.0",
+    "@google/genai": "^1.36.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.6.0",
-    "lucide-react": "^0.447.0",
+    "lucide-react": "^0.475.0",
     "jszip": "^3.10.1"
   },
   "devDependencies": {
