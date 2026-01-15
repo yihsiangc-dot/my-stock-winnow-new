@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Menu, FileDown, Activity, Cpu } from 'lucide-react';
+import { Menu, FileDown, Activity, Cpu, ExternalLink } from 'lucide-react';
 import { INITIAL_SECTORS } from './constants';
 import { Sector, AnalysisResult } from './types';
 import StockCard from './StockCard';
@@ -55,7 +55,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     refreshMarketData();
-    const timer = setInterval(refreshMarketData, 30000);
+    const timer = setInterval(refreshMarketData, 60000);
     return () => clearInterval(timer);
   }, [refreshMarketData]);
 
@@ -72,7 +72,7 @@ const App: React.FC = () => {
       setAnalysis(result);
     } catch (error) {
       console.error(error);
-      alert("AI 分析失敗。請確認 Vercel 環境變數 API_KEY 是否正確。");
+      alert("AI 分析失敗。請確認 Vercel 環境變數 API_KEY 已設定。");
     } finally {
       setIsAnalyzing(false);
     }
@@ -99,7 +99,7 @@ const App: React.FC = () => {
           <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
             <div className={`w-2 h-2 rounded-full ${apiStatus === 'online' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              {apiStatus === 'online' ? 'Live Data' : 'Sync Error'}
+              {apiStatus === 'online' ? 'Live Data' : 'API Sync Error'}
             </span>
           </div>
           <button onClick={() => setShowSetupGuide(true)} className="p-2 text-slate-400 hover:text-white">
@@ -113,7 +113,7 @@ const App: React.FC = () => {
 
       <div className="flex flex-1 overflow-hidden relative">
         <aside className={`absolute lg:static inset-0 z-30 lg:z-0 w-64 bg-[#050505] border-r border-white/5 p-6 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Markets</h2>
+          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Sectors</h2>
           <nav className="space-y-2 overflow-y-auto max-h-[calc(100vh-12rem)] scrollbar-hide">
             {sectors.map(sector => (
               <button 
@@ -125,7 +125,7 @@ const App: React.FC = () => {
               </button>
             ))}
             <button onClick={() => setShowAddModal(true)} className="w-full mt-4 p-3 border border-dashed border-white/10 rounded-xl text-xs text-slate-500 hover:text-white hover:border-white/20">
-              + New Sector
+              + Add Strategy
             </button>
           </nav>
         </aside>
@@ -140,30 +140,30 @@ const App: React.FC = () => {
                   <div>
                     <h2 className="text-4xl lg:text-5xl font-black italic uppercase tracking-tighter mb-2">{activeSector.name}</h2>
                     <div className="flex items-center gap-2">
-                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Stage:</span>
+                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Market Phase:</span>
                        <span className="text-[10px] font-black uppercase text-red-500 px-2 py-0.5 bg-red-500/10 rounded">{activeSector.phase}</span>
                     </div>
                   </div>
                   <button 
                     onClick={handleAnalysis} 
                     disabled={isAnalyzing}
-                    className="w-full lg:w-auto px-8 py-4 bg-red-600 rounded-2xl font-black uppercase text-xs tracking-widest hover:scale-105 active:scale-95 transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+                    className="w-full lg:w-auto px-10 py-5 bg-red-600 rounded-3xl font-black uppercase text-xs tracking-widest hover:scale-105 active:scale-95 transition-all disabled:opacity-50 shadow-[0_0_40px_rgba(239,68,68,0.2)]"
                   >
-                    {isAnalyzing ? "AI Scanning..." : "Deep AI Market Insight"}
+                    {isAnalyzing ? "AI Deep Scanning..." : "Execute AI Analysis"}
                   </button>
                 </div>
 
                 {analysis && (
-                  <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-8 space-y-6 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                    <div className="flex items-center gap-2 border-b border-white/5 pb-4">
+                  <div className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] p-8 space-y-6 shadow-2xl animate-in fade-in slide-in-from-bottom-6">
+                    <div className="flex items-center gap-3 border-b border-white/5 pb-4">
                       <Cpu className="w-5 h-5 text-red-500" />
-                      <h3 className="font-black italic uppercase tracking-widest text-sm text-slate-300">Strategist Analysis</h3>
+                      <h3 className="font-black italic uppercase tracking-widest text-sm text-slate-300">Market Strategist Output</h3>
                     </div>
                     <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">{analysis.leaderAnalysis}</div>
                     
                     {analysis.sources && analysis.sources.length > 0 && (
-                      <div className="mt-6 pt-6 border-t border-white/5">
-                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Grounding Sources</h4>
+                      <div className="mt-8 pt-6 border-t border-white/5">
+                        <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-4">Grounding Sources (Search Results)</div>
                         <div className="flex flex-wrap gap-2">
                           {analysis.sources.map((source, idx) => (
                             <a 
@@ -171,9 +171,9 @@ const App: React.FC = () => {
                               href={source.web.uri} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[10px] text-slate-400 hover:text-white transition-all flex items-center gap-2"
+                              className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] text-slate-400 hover:text-white transition-all flex items-center gap-2 group"
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                              <ExternalLink className="w-3 h-3 text-red-500 opacity-50 group-hover:opacity-100" />
                               {source.web.title}
                             </a>
                           ))}

@@ -2,7 +2,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { Sector, AnalysisResult } from "./types";
 
-// 必須使用 named parameter 初始化，並直接從環境變數讀取 API_KEY
+// 必須使用 named parameter 初始化
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function analyzeSectorDynamics(sector: Sector): Promise<AnalysisResult> {
@@ -15,50 +15,51 @@ export async function analyzeSectorDynamics(sector: Sector): Promise<AnalysisRes
   ).join('\n');
 
   const prompt = `
-    【台股族群監控分析】
-    當前時間：${dateStr} ${timeStr}
-    族群：[${sector.name}]
+    【台股族群深度掃描】
+    觀測日期：${dateStr}
+    觀測時間：${timeStr}
+    目標族群：[${sector.name}]
     
-    即時行情：
+    即時市場數據：
     ${stockDataString}
 
-    請利用 Google Search 執行深度分析：
-    1. 分析今日族群走勢的核心動能。
-    2. 找出具備補漲潛力的個股。
-    3. 提供短線操作建議。
+    請執行 Google Search 並以此日期後的資訊進行分析：
+    1. 分析今日該族群集體轉強/轉弱的關鍵新聞。
+    2. 領頭羊表現與後隨補漲股的力道分析。
+    3. 找出具備「獵人評分」潛力的低位階個股。
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp', // 使用最新穩定模型
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
       },
     });
 
     // 正確訪問 .text 屬性 (Getter)
-    const text = response.text || "無法取得分析內容。";
+    const text = response.text || "目前無法取得即時分析。";
     
-    // 提取搜尋接地來源 (Grounding)
+    // 必須提取搜尋接地來源以符合規則
     const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: any) => ({
       web: {
         uri: chunk.web?.uri || '',
-        title: chunk.web?.title || '參考來源'
+        title: chunk.web?.title || '市場情報來源'
       }
     })).filter((s: any) => s.web.uri !== '') || [];
 
     return {
       leaderAnalysis: text,
       suggestedLaggards: sector.stocks.filter(s => s.hunterScore > 80).map(s => s.name),
-      exitSignals: "跌破開盤價或領頭羊轉弱",
+      exitSignals: "跌破今日關鍵支撐或族群領頭羊放量不漲",
       reasoning: text,
-      winProbability: sources.length > 0 ? 80 : 65,
+      winProbability: sources.length > 0 ? 80 : 70,
       riskRewardRatio: "1:2.5",
       sources: sources
     };
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("Gemini Error:", error);
     throw error;
   }
 }
