@@ -13,14 +13,13 @@ function getApiKeys() {
 }
 
 const KEYS = getApiKeys();
-// 統一使用代理路徑
 const BASE_URL = '/fugle-api';
 
 export async function fetchFugleQuotes(symbols: string[]): Promise<Partial<Stock>[]> {
   if (KEYS.length === 0) return [];
 
   const tryFetch = async (key: string, symbol: string) => {
-    // 加上時間戳確保不抓取緩存
+    // 增加 _t 避免瀏覽器快取
     const url = `${BASE_URL}/marketdata/v1.0/stock/intraday/quote/${symbol}?_t=${Date.now()}`;
     const response = await fetch(url, {
       method: 'GET',
@@ -47,12 +46,14 @@ export async function fetchFugleQuotes(symbols: string[]): Promise<Partial<Stock
 
       if (!data) return null;
 
+      // 抓取現價：優先抓 lastTrade，若收盤則抓 closePrice
       const price = data.lastTrade?.price || data.closePrice || data.previousClose || 0;
       const openPrice = data.openPrice || data.previousClose || price;
       const changePercent = (data.changePercent || 0) * 100;
       
-      // 計算「開盤後漲幅」：這能反映開盤 5 分鐘後的真實動能
-      const openingFiveMinChange = openPrice > 0 ? ((price - openPrice) / openPrice) * 100 : 0;
+      // 開盤強弱 (Opening Momentum) = (現價 - 開盤價) / 開盤價
+      // 這能反應開盤 5-30 分鐘後的真實動能，而非僅看昨收對比
+      const openingChange = openPrice > 0 ? ((price - openPrice) / openPrice) * 100 : 0;
       
       const totalVolume = data.total?.unit || 0;
 
@@ -61,18 +62,20 @@ export async function fetchFugleQuotes(symbols: string[]): Promise<Partial<Stock
         price: price,
         change: data.change || 0,
         changePercent: changePercent,
-        openingFiveMinChange: openingFiveMinChange,
+        openingFiveMinChange: openingChange,
         volume: totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}K` : `${totalVolume}`,
         lastUpdated: new Date().toLocaleTimeString('zh-TW', { hour12: false }),
         isRealData: true,
-        // 獵人評分邏輯優化：若開盤後持續走強，分數會大幅提高
-        hunterScore: Math.min(100, Math.floor(60 + (changePercent * 3) + (openingFiveMinChange * 5)))
+        // 獵人評分：權重包含開盤後的延續性
+        hunterScore: Math.min(100, Math.floor(65 + (changePercent * 2) + (openingChange * 5)))
       };
     }));
 
-    return results.filter((r): r is NonNullable<typeof r> => r !== null);
+    const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null);
+    console.debug(`Synced ${validResults.length} stocks successfully.`);
+    return validResults;
   } catch (error) {
-    console.error("Fugle Sync Failed:", error);
+    console.error("Fugle Sync Final Failed:", error);
     return [];
   }
 }

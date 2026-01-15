@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Stock } from './types';
 import { COLORS } from './constants';
+import { ArrowUpRight, TrendingUp } from 'lucide-react';
 
 interface StockCardProps {
   stock: Stock;
@@ -24,12 +25,11 @@ const StockCard: React.FC<StockCardProps> = ({ stock }) => {
     }
   }, [stock.price]);
 
-  const isDistributing = stock.distributionRisk > 80;
-  // 判斷開盤後的強弱
-  const isOpenStrong = stock.openingFiveMinChange > 0.5;
+  const isStrongOpening = stock.openingFiveMinChange > 1.0;
 
   return (
-    <div className={`bg-[#0a0a0a] border ${isDistributing ? 'border-amber-500/40' : 'border-white/5'} rounded-[2rem] p-8 hover:border-white/20 transition-all duration-500 group relative overflow-hidden shadow-2xl ${flash || ''}`}>
+    <div className={`bg-[#0a0a0a] border ${isStrongOpening ? 'border-red-500/30' : 'border-white/5'} rounded-[2rem] p-8 hover:border-white/20 transition-all duration-500 group relative overflow-hidden shadow-2xl ${flash || ''}`}>
+      {/* Live Badge */}
       <div className="absolute top-4 right-8 flex items-center gap-1.5">
         <div className={`w-1.5 h-1.5 rounded-full ${stock.isRealData ? 'bg-blue-500 shadow-[0_0_5px_#3b82f6]' : 'bg-slate-700'}`}></div>
         <span className={`text-[8px] font-black uppercase tracking-widest ${stock.isRealData ? 'text-blue-500' : 'text-slate-600'}`}>
@@ -49,8 +49,10 @@ const StockCard: React.FC<StockCardProps> = ({ stock }) => {
             {stock.isLeader && (
               <span className="px-2 py-0.5 bg-red-600/10 text-red-500 text-[10px] font-black rounded uppercase tracking-widest border border-red-500/20">Leader</span>
             )}
-            {isOpenStrong && (
-              <span className="px-2 py-0.5 bg-orange-500/10 text-orange-500 text-[10px] font-black rounded uppercase tracking-widest border border-orange-500/20 italic">Opening Strong</span>
+            {isStrongOpening && (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-red-600/20 text-red-400 text-[9px] font-black rounded uppercase tracking-widest animate-pulse border border-red-500/30">
+                <TrendingUp className="w-2 h-2" /> Strong Opening
+              </span>
             )}
           </div>
         </div>
@@ -66,14 +68,15 @@ const StockCard: React.FC<StockCardProps> = ({ stock }) => {
 
       <div className="grid grid-cols-2 gap-8 mb-8">
         <div className="space-y-3">
-          <div className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Open Change</div>
-          <div className={`text-lg font-mono font-black ${stock.openingFiveMinChange > 0 ? 'text-red-400' : (stock.openingFiveMinChange < 0 ? 'text-green-400' : 'text-white')}`}>
+          <div className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Open Gain (開盤後)</div>
+          <div className={`text-lg font-mono font-black flex items-center gap-1 ${stock.openingFiveMinChange > 0 ? 'text-red-400' : (stock.openingFiveMinChange < 0 ? 'text-green-400' : 'text-white')}`}>
+            {stock.openingFiveMinChange > 0 && <ArrowUpRight className="w-4 h-4" />}
             {stock.openingFiveMinChange > 0 ? '+' : ''}{stock.openingFiveMinChange.toFixed(2)}%
           </div>
         </div>
         
         <div className="space-y-3">
-          <div className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Volume (24h)</div>
+          <div className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Volume (Unit)</div>
           <div className="text-lg font-mono font-black text-white">
             {stock.volume}
           </div>
@@ -85,16 +88,16 @@ const StockCard: React.FC<StockCardProps> = ({ stock }) => {
           {stock.hunterScore > 85 ? (
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-red-600 animate-ping"></div>
-              <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Target Locked</span>
+              <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Momentum Peak</span>
             </div>
           ) : (
             <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Scanning Dynamics...</span>
           )}
-          <span className="text-[8px] font-mono text-slate-700 font-black uppercase tracking-widest">SYNC_T: {stock.lastUpdated || 'PENDING'}</span>
+          <span className="text-[8px] font-mono text-slate-700 font-black uppercase tracking-widest">SYNC_T: {stock.lastUpdated || 'WAITING'}</span>
         </div>
         <div className="text-right flex flex-col items-end">
           <div className="text-[11px] font-mono text-slate-500 font-bold uppercase">Hunter Score: {stock.hunterScore}</div>
-          <div className="text-[8px] text-slate-700 font-black uppercase tracking-tighter">Verified Snapshot Data</div>
+          <div className="text-[8px] text-slate-700 font-black uppercase tracking-tighter">Verified by Hunter-AI</div>
         </div>
       </div>
     </div>
