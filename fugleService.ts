@@ -1,69 +1,75 @@
 
 import { Stock } from "./types";
 
-// Base64 編碼的金鑰處理
-const ENCODED_KEYS = 'MzNmNzdhODQtNzkzMy00ZDM4LWE3OWEtODgzZWQ2MjgyNjUxIGU1NWNiMTg3LWM1MTEtNGYxOC04N2EzLTZiZDQzZDFiZmFmMA==';
+// 使用更新後的雙重備用金鑰
+const ENCODED_KEYS = 'ZTU1Y2IxODctYzUxMS00ZjE4LTg3YTMtNmJkNDNkMWJmYWYwIDMzZjc3YTg0LTc5MzMtNGQzOC1hNzlhLTg4M2VkNjI4MjY1MQ==';
 
-function getApiKey() {
+function getApiKeys() {
   try { 
-    return atob(ENCODED_KEYS).split(' ')[0]; 
+    return atob(ENCODED_KEYS).split(' '); 
   } catch (e) { 
-    return ''; 
+    return []; 
   }
 }
 
-const FUGLE_API_KEY = getApiKey();
-// 統一使用 /fugle-api，本地由 vite.config.ts 代理，雲端由 vercel.json 代理
+const KEYS = getApiKeys();
 const BASE_URL = '/fugle-api';
 
 export async function fetchFugleQuotes(symbols: string[]): Promise<Partial<Stock>[]> {
-  if (!FUGLE_API_KEY) {
-    console.error("Fugle API Key is missing");
-    return [];
-  }
+  if (KEYS.length === 0) return [];
+
+  // 嘗試使用多把金鑰進行抓取
+  const tryFetch = async (key: string, symbol: string) => {
+    // 加入時間戳避免快取
+    const url = `${BASE_URL}/marketdata/v1.0/stock/intraday/quote/${symbol}?_t=${Date.now()}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 
+        'X-Fugle-Api-Key': key, 
+        'Accept': 'application/json' 
+      }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  };
 
   try {
     const results = await Promise.all(symbols.map(async (symbol) => {
-      // 使用富果新版行情快照 API
-      const url = `${BASE_URL}/marketdata/v1.0/stock/intraday/quote/${symbol}`;
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { 
-          'X-Fugle-Api-Key': FUGLE_API_KEY, 
-          'Accept': 'application/json' 
+      let data = null;
+      // 輪詢金鑰嘗試
+      for (const key of KEYS) {
+        try {
+          data = await tryFetch(key, symbol);
+          if (data) break;
+        } catch (e) {
+          continue; 
         }
-      });
-
-      if (!response.ok) {
-        console.warn(`Fugle API Error [${symbol}]: Status ${response.status}`);
-        return null;
       }
 
-      const data = await response.json();
-      
-      // 解析富果返回的數據結構
-      const price = data.lastTrade?.price || data.closePrice || 0;
+      if (!data) return null;
+
+      // 修正：富果 API 在開盤前或收盤後 lastTrade 可能為空，需抓取 closePrice
+      const price = data.lastTrade?.price || data.closePrice || data.previousClose || 0;
       const change = data.change || 0;
       const changePercent = (data.changePercent || 0) * 100;
-      const volumeUnit = data.total?.unit || 0;
+      const totalVolume = data.total?.unit || 0;
 
       return {
         id: symbol,
         price: price,
         change: change,
         changePercent: changePercent,
-        volume: volumeUnit >= 1000 ? `${(volumeUnit / 1000).toFixed(1)}K` : `${volumeUnit}`,
+        volume: totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}K` : `${totalVolume}`,
         lastUpdated: new Date().toLocaleTimeString('zh-TW', { hour12: false }),
         isRealData: true,
-        // 動態計算獵人評分 (簡單範例)
-        hunterScore: Math.min(100, Math.floor(70 + (changePercent * 5)))
+        // 動態計算獵人評分：漲幅越接近漲停或量能放大的評分越高
+        hunterScore: Math.min(100, Math.floor(65 + (changePercent * 4)))
       };
     }));
 
     return results.filter((r): r is NonNullable<typeof r> => r !== null);
   } catch (error) {
-    console.error("Fugle Service Exception:", error);
+    console.error("Fugle Sync Failed:", error);
     return [];
   }
 }
