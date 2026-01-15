@@ -25,13 +25,15 @@ const StockCard: React.FC<StockCardProps> = ({ stock }) => {
   }, [stock.price]);
 
   const isDistributing = stock.distributionRisk > 80;
+  // 判斷開盤後的強弱
+  const isOpenStrong = stock.openingFiveMinChange > 0.5;
 
   return (
     <div className={`bg-[#0a0a0a] border ${isDistributing ? 'border-amber-500/40' : 'border-white/5'} rounded-[2rem] p-8 hover:border-white/20 transition-all duration-500 group relative overflow-hidden shadow-2xl ${flash || ''}`}>
       <div className="absolute top-4 right-8 flex items-center gap-1.5">
         <div className={`w-1.5 h-1.5 rounded-full ${stock.isRealData ? 'bg-blue-500 shadow-[0_0_5px_#3b82f6]' : 'bg-slate-700'}`}></div>
         <span className={`text-[8px] font-black uppercase tracking-widest ${stock.isRealData ? 'text-blue-500' : 'text-slate-600'}`}>
-          {stock.isRealData ? 'Fugle Snapshot' : 'Simulation Mode'}
+          {stock.isRealData ? 'Live Data' : 'Simulation'}
         </span>
       </div>
 
@@ -47,7 +49,9 @@ const StockCard: React.FC<StockCardProps> = ({ stock }) => {
             {stock.isLeader && (
               <span className="px-2 py-0.5 bg-red-600/10 text-red-500 text-[10px] font-black rounded uppercase tracking-widest border border-red-500/20">Leader</span>
             )}
-            <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-black rounded uppercase tracking-widest border border-white/10">Verified</span>
+            {isOpenStrong && (
+              <span className="px-2 py-0.5 bg-orange-500/10 text-orange-500 text-[10px] font-black rounded uppercase tracking-widest border border-orange-500/20 italic">Opening Strong</span>
+            )}
           </div>
         </div>
         <div className="text-right">
@@ -62,16 +66,16 @@ const StockCard: React.FC<StockCardProps> = ({ stock }) => {
 
       <div className="grid grid-cols-2 gap-8 mb-8">
         <div className="space-y-3">
-          <div className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Volume (24h)</div>
-          <div className="text-lg font-mono font-black text-white">
-            {stock.volume}
+          <div className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Open Change</div>
+          <div className={`text-lg font-mono font-black ${stock.openingFiveMinChange > 0 ? 'text-red-400' : (stock.openingFiveMinChange < 0 ? 'text-green-400' : 'text-white')}`}>
+            {stock.openingFiveMinChange > 0 ? '+' : ''}{stock.openingFiveMinChange.toFixed(2)}%
           </div>
         </div>
         
         <div className="space-y-3">
-          <div className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Net Change</div>
-          <div className="text-lg font-mono font-black" style={{ color }}>
-            {stock.change > 0 ? '+' : ''}{stock.change.toFixed(2)}
+          <div className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Volume (24h)</div>
+          <div className="text-lg font-mono font-black text-white">
+            {stock.volume}
           </div>
         </div>
       </div>
@@ -84,13 +88,13 @@ const StockCard: React.FC<StockCardProps> = ({ stock }) => {
               <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Target Locked</span>
             </div>
           ) : (
-            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Scanning...</span>
+            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Scanning Dynamics...</span>
           )}
-          <span className="text-[8px] font-mono text-slate-700 font-black">SYNC_T: {stock.lastUpdated || 'PENDING'}</span>
+          <span className="text-[8px] font-mono text-slate-700 font-black uppercase tracking-widest">SYNC_T: {stock.lastUpdated || 'PENDING'}</span>
         </div>
         <div className="text-right flex flex-col items-end">
-          <div className="text-[11px] font-mono text-slate-500 font-bold uppercase">Score: {stock.hunterScore}</div>
-          <div className="text-[8px] text-slate-700 font-black uppercase tracking-tighter">Data Verified via Fugle</div>
+          <div className="text-[11px] font-mono text-slate-500 font-bold uppercase">Hunter Score: {stock.hunterScore}</div>
+          <div className="text-[8px] text-slate-700 font-black uppercase tracking-tighter">Verified Snapshot Data</div>
         </div>
       </div>
     </div>
