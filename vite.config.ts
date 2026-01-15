@@ -9,6 +9,15 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.API_KEY': JSON.stringify(env.API_KEY || "")
     },
+    server: {
+      proxy: {
+        '/fugle-api': {
+          target: 'https://api.fugle.tw',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/fugle-api/, '')
+        }
+      }
+    },
     build: {
       outDir: 'dist',
       sourcemap: false

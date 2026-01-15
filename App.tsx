@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Menu, FileDown, Activity, Cpu, ExternalLink } from 'lucide-react';
+import { Menu, FileDown, Cpu, ExternalLink } from 'lucide-react';
 import { INITIAL_SECTORS } from './constants';
 import { Sector, AnalysisResult } from './types';
 import StockCard from './StockCard';
@@ -13,7 +13,7 @@ import { fetchFugleQuotes } from './fugleService';
 const App: React.FC = () => {
   const [sectors, setSectors] = useState<Sector[]>(() => {
     try {
-      const saved = localStorage.getItem('hunter_all_sectors_v3');
+      const saved = localStorage.getItem('hunter_all_sectors_v4');
       return saved ? JSON.parse(saved) : INITIAL_SECTORS;
     } catch (e) {
       return INITIAL_SECTORS;
@@ -33,6 +33,8 @@ const App: React.FC = () => {
 
   const refreshMarketData = useCallback(async () => {
     if (!activeSector) return;
+    
+    console.log(`Syncing data for: ${activeSector.name}...`);
     const symbols = activeSector.stocks.map(s => s.id);
     const realQuotes = await fetchFugleQuotes(symbols);
     
@@ -44,7 +46,10 @@ const App: React.FC = () => {
           ...sector,
           stocks: sector.stocks.map(stock => {
             const quote = realQuotes.find(q => q.id === stock.id);
-            return quote ? { ...stock, ...quote } : stock;
+            if (quote) {
+              return { ...stock, ...quote };
+            }
+            return stock;
           })
         };
       }));
@@ -53,14 +58,19 @@ const App: React.FC = () => {
     }
   }, [activeSectorId, activeSector]);
 
+  // 初次加載與主動切換時更新
   useEffect(() => {
     refreshMarketData();
+  }, [activeSectorId]);
+
+  // 定時刷新 (1分鐘)
+  useEffect(() => {
     const timer = setInterval(refreshMarketData, 60000);
     return () => clearInterval(timer);
   }, [refreshMarketData]);
 
   useEffect(() => {
-    localStorage.setItem('hunter_all_sectors_v3', JSON.stringify(sectors));
+    localStorage.setItem('hunter_all_sectors_v4', JSON.stringify(sectors));
   }, [sectors]);
 
   const handleAnalysis = async () => {
@@ -99,7 +109,7 @@ const App: React.FC = () => {
           <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
             <div className={`w-2 h-2 rounded-full ${apiStatus === 'online' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              {apiStatus === 'online' ? 'Live Data' : 'API Sync Error'}
+              {apiStatus === 'online' ? 'Live Data Sync' : 'Static Mode'}
             </span>
           </div>
           <button onClick={() => setShowSetupGuide(true)} className="p-2 text-slate-400 hover:text-white">
